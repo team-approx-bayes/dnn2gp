@@ -21,8 +21,8 @@ test = 'black'
 train = 'darkgray'
 
 
-def produce_paper_toy_plots():
-    with open('results/reg_ms_delta.pkl', 'rb') as f:
+def produce_paper_toy_plots(name):
+    with open('results/reg_ms_delta_{name}.pkl'.format(name=name), 'rb') as f:
         res = pickle.load(f)
 
 
@@ -152,8 +152,8 @@ def produce_paper_toy_plots():
     plt.savefig('figures/marglik_delta_toy_fits.pdf')
 
 
-def produce_additional_toy_plots():
-    with open('results/reg_ms_width.pkl', 'rb') as f:
+def produce_additional_toy_plots(name):
+    with open('results/reg_ms_width_{name}.pkl'.format(name=name), 'rb') as f:
         res = pickle.load(f)
 
     mlhs = np.array([res['results'][i]['mlh'] for i in range(len(res['params']))])
@@ -214,8 +214,13 @@ def produce_additional_toy_plots():
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Model selection experiment with result saving and MP.')
+    parser.add_argument('--name', type=str, required=True)
+    args = parser.parse_args()
+    name = args.name
     # delta on the toy data set with Laplace and VI (used in paper)
-    produce_paper_toy_plots()
+    produce_paper_toy_plots(name)
     # width and depth on the toy data set with Laplace and VI (not in paper)
-    produce_additional_toy_plots()
+    produce_additional_toy_plots(name)
     # TODO: add UCI result plotting
