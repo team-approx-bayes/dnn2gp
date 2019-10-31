@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import pickle
 from tqdm import tqdm
 from itertools import repeat
@@ -108,12 +109,12 @@ def reg_ms_delta(n_samples=100, n_retries=10, hidden_size=20, n_layers=2, n_para
 
     res['results'] = list(metric_results)
 
-    with open('reg_ms_delta_{fname}.pkl'.format(fname=fname), 'wb') as f:
+    with open('results/reg_ms_delta_{fname}.pkl'.format(fname=fname), 'wb') as f:
         pickle.dump(res, f)
     return res
 
 
-def reg_ms_width(n_samples=100, n_retries=1, delta=0.63, n_layers=2, fname='',
+def reg_ms_width(n_samples=100, n_retries=10, delta=0.63, n_layers=2, fname='',
                  sigma_high=1, sigma_low=0.1, pm=0.45, po=0.1):
     sigma_low, sigma_high = sigma_low, sigma_high
     ps = [pm, po, pm]
@@ -131,7 +132,7 @@ def reg_ms_width(n_samples=100, n_retries=1, delta=0.63, n_layers=2, fname='',
 
     res['results'] = list(metric_results)
 
-    with open('reg_ms_width_{fname}.pkl'.format(fname=fname), 'wb') as f:
+    with open('results/reg_ms_width_{fname}.pkl'.format(fname=fname), 'wb') as f:
         pickle.dump(res, f)
     return res
 
@@ -140,14 +141,18 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Model selection experiment with result saving and MP.')
     parser.add_argument('--name', type=str, required=True)
-    parser.add_argument('--n_retries', type=int, default=30)
-    parser.add_argument('--n_params', type=int, default=30)
+    parser.add_argument('--n_retries', type=int, default=10)
+    parser.add_argument('--n_params', type=int, default=21)
     parser.add_argument('--sigma_lo', type=float, default=0.1)
     parser.add_argument('--sigma_hi', type=float, default=1)
     parser.add_argument('--pout', type=float, default=0.1)
     parser.add_argument('--pin', type=float, default=0.45)
+    parser.add_argument('--seed', type=int, default=7)
     args = parser.parse_args()
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     reg_ms_delta(fname=args.name, sigma_low=args.sigma_lo, sigma_high=args.sigma_hi, po=args.pout, pm=args.pin,
                  n_retries=args.n_retries, n_params=args.n_params)
     reg_ms_width(fname=args.name, sigma_low=args.sigma_lo, sigma_high=args.sigma_hi, po=args.pout, pm=args.pin,
                  n_retries=args.n_retries)
+    # TODO: delta, sigma, width for UCI data sets here or in new file!
