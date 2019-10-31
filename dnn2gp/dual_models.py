@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-import scipy.linalg
 
 
 class DualModel:
@@ -134,7 +133,7 @@ if __name__ == '__main__':
     # Visual inspection test on some sinusoid data.
     # Sampling from functions can also be done and plotted.
     import matplotlib.pyplot as plt
-    from bntk.gaussian import Gaussian
+    from dnn2gp.gaussian import Gaussian
     show_samples = False
     n = 100
     noise_sigma = 0.25

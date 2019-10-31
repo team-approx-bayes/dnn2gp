@@ -4,8 +4,8 @@ from torch.distributions import Normal, Bernoulli
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from bntk.utilities import compute_log_loss_gradient, compute_log_loss_hessian, sigmoid, is_psd, identity
-from bntk.neural_networks import SimpleMLP, WilliamsNN, SimpleConvNet
+from dnn2gp.utilities import compute_log_loss_gradient, compute_log_loss_hessian, sigmoid, is_psd, identity
+from dnn2gp.neural_networks import SimpleMLP, WilliamsNN, SimpleConvNet
 
 torch.set_default_dtype(torch.double)
 

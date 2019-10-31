@@ -7,9 +7,9 @@ from sklearn.metrics import mean_squared_error
 import multiprocessing as mp
 from multiprocessing import Pool
 
-from bntk.laplace_models import NeuralNetworkRegression
-from bntk.dual_models import DualGPRegression
-from bntk.variational_models import VariationalNeuralRegression
+from dnn2gp.laplace_models import NeuralNetworkRegression
+from dnn2gp.dual_models import DualGPRegression
+from dnn2gp.variational_models import VariationalNeuralRegression
 
 
 def sample_data(ps=None, sigma_low=0.1, sigma_high=1., n_samples=50):

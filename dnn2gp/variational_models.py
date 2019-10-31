@@ -2,9 +2,9 @@ import numpy as np
 import torch
 from torch.distributions import Normal
 
-from bntk.neural_networks import SimpleMLP
-from bntk.vogn import VOGN
-from bntk.dual_models import DualGPRegression
+from dnn2gp.neural_networks import SimpleMLP
+from dnn2gp.vogn import VOGN
+from dnn2gp.dual_models import DualGPRegression
 
 
 class VariationalNeuralRegression:

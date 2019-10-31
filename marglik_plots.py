@@ -211,8 +211,6 @@ def produce_additional_toy_plots():
     ax2.set_ylim(ylim)
     plt.tight_layout()
     plt.savefig('figures/marglik_width_toy_laplace.pdf')
-    plt.show()
-
 
 
 if __name__ == '__main__':
