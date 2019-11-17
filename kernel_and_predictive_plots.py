@@ -95,24 +95,22 @@ def plot_kernel(kernel, Y, Y_colors, fname, use_gl=False):
     pio.write_image(fig, 'figures/{}_ker.pdf'.format(fname))
 
 
-def plot_observations(jtheta, Y, classes, Y_colors, fname, use_gl=False, width=300):
+def plot_observations(jtheta, Y, classes, Y_colors, fname, use_gl=False, width=300, plot_var=False):
     N, K = jtheta.shape
-    zmean = np.mean(jtheta)
-    zmin, zmax = jtheta.min(), jtheta.max()
-    z_diff = max(zmax - zmean, zmean - zmin)  # max(-jtheta.min(), jtheta.max())
+    if not plot_var:
+        zmin = 0
+        zmax = 1
+    else:
+        zmin = 0
+        zmax = jtheta.max() #0.25
     heatmap = go.Heatmapgl if use_gl else go.Heatmap
     data = [
         heatmap(
             x=classes,
             y=np.arange(1, N + 1),
             z=jtheta,
-            # zmin=zmean-z_diff,
-            # zmax=zmean+z_diff,
-            # zmin=0,
-            # zmax=1,
-            # colorscale=[[0., 'white'],[1.0, 'red']],
-            zmin=0,
-            zmax=0.25,  # zmax,#zmean+z_diff,
+            zmin=zmin,
+            zmax=zmax,
             colorscale=[[0.0, 'white'], [1.0, 'red']],
             colorbar=dict(thickness=15, exponentformat='e', showexponent='none')
         )
@@ -183,6 +181,9 @@ if __name__ == '__main__':
     Var_f = np.load('results/CIFAR_Laplace_gp_functional_var.npy')
     ps = np.load('results/CIFAR_Laplace_nn_predictive.npy')
     Ys = np.concatenate([np.repeat([i], 30) for i in range(10)])
+    plot_kernel(K, Ys, tab10, 'cifar_laplace_kernel')
     plot_observations(ps, Ys, np.arange(10), tab10, 'cifar_laplace_pred_mean_ste', width=550)
-    plot_observations(Var_f, Ys, np.arange(10), tab10, 'cifar_laplace_var_f', width=450)
-    plot_observations(Var_y, Ys, np.arange(10), tab10, 'cifar_laplace_var_y', width=450)
+    plot_observations(Var_f, Ys, np.arange(10), tab10, 'cifar_laplace_var_f', width=450,
+                      plot_var=True)
+    plot_observations(Var_y, Ys, np.arange(10), tab10, 'cifar_laplace_var_y', width=450,
+                      plot_var=True)

@@ -24,13 +24,43 @@ python marglik_plots.py --name of_choice  # use your result files
 We use pre-trained models that are saved in the `/models` directory and are trained on 
 either CIFAR-10 or MNIST. The plots produced in our paper can be reproduced by running
 ```bash
-python kernel_predist.py
+python kernel_and_predictive.py
 ```
-Further, the module `dnn2gp.kernel_distributions` allows to compute relevant quantities
-for any pytorch neural network and corresponding data loader. If the full training set is
-passed, the Laplace approximation can also be computed.
+To reproduce the plots of kernel, predictive mean, and variance, run
+```bash
+python kernel_and_predictive_plots.py
+``` 
 
-(TODO: add the structure and methods here with a short explanation)
+### Computing Kernel and Predictive of Neural Network
+
+#### 1. If you have* a trained neural network with weight-decay but no posterior approximation yet
+Use the function `dnn2gp.compute_laplace(model, train_loader, prior_prec):` to compute a
+Laplace approximation to the posterior distribution. Simply pass the pytorch model, iterator of
+samples and targets, and the prior precision (equal to weight-decay parameter). We assume a 
+classification task so we will use the neural network logits (pre-softmax) outputs and
+assume you trained with softmax.
+
+#### 2. Compute dnn2gp quantities (Jacobians and predictives)
+
+To obtain Jacobians, GP predictive mean, labels, predictive variance, predictive noise, 
+and predictive mean we can call `compute_dnn2gp_quantities(model, data_loader, post_prec=post_prec, limit=1000)`
+with pytorch model that outputs logits and is trained with softmax and the corresponding training
+data set loader. The posterior precision approximation needs to be passed, too. Otherwise,
+only the Jacobians, GP predictive mean, and labels are returned.
+
+Note that in correspondence to our paper, we use the reparameterization for these quantities.
+Only the GP predictive mean corresponds to the dual model in the Theorems while the 
+predictive mean and predictive variances are obtained *after* reparameterizing for 
+the original data space.
+
+#### 3. Compute the kernel and aggregate it
+
+To compute the kernel, the Jacobians from 2. are required. Based on the Jacobians,
+we can compute the kernel or some aggregation of it with `compute_kernel(Jacobians, agg_type='diag')`.
+For most networks and data set sizes, using `limit=1000` in will be easily computable and does not
+take much storage. The aggregation type `agg_type` denotes how we reduce the `NK x NK` kernel.
+`'diag'` simply sums up across the diagonals, `'sum'` sums all elements of a `K x K`.
+
 
 ### Requirements
 
