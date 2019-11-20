@@ -69,9 +69,12 @@ class DualLinearRegression(DualModel):
     def posterior(self):
         return self.m_post, self.S_post, self.P_post
 
-    def posterior_predictive_f(self, X_hat_star, use_fix=False):
+    def posterior_predictive_f(self, X_hat_star, use_fix=False, diag_only=False):
         m_f_hat_star = X_hat_star @ (self.m_post_fix if use_fix else self.m_post)
-        s_f_hat_star = X_hat_star @ self.S_post @ X_hat_star.T
+        if diag_only:
+            s_f_hat_star = np.einsum('ij,ij->i', X_hat_star @ self.S_post, X_hat_star)
+        else:
+            s_f_hat_star = X_hat_star @ self.S_post @ X_hat_star.T
         return m_f_hat_star, s_f_hat_star
 
 
@@ -93,16 +96,25 @@ class DualGPRegression(DualModel):
         self.K_inv = np.linalg.pinv(self.K + self.s_noise ** 2 * np.eye(self.n))
         self.m_offset = self.X_hat @ self.m_0
 
-    def posterior_predictive_f(self, X_hat_star, use_fix=False):
+    def posterior_predictive_f(self, X_hat_star, use_fix=False, diag_only=False):
         if np.allclose(np.diag(np.diag(self.S_0)), self.S_0):  # diag speed up
             s = np.diag(self.S_0)[:, np.newaxis]
             K_star_ = X_hat_star @ (s * self.X_hat.T)
-            K_star_star = X_hat_star @ (s * X_hat_star.T)
+            if diag_only:
+                K_star_star = np.einsum('ij,ji->i', X_hat_star, (s * X_hat_star.T))
+            else:
+                K_star_star = X_hat_star @ (s * X_hat_star.T)
         else:
             K_star_ = X_hat_star @ self.S_0 @ self.X_hat.T
-            K_star_star = X_hat_star @ self.S_0 @ X_hat_star.T
+            if diag_only:
+                K_star_star = np.einsum('ij,ij->i', X_hat_star @ self.S_0, X_hat_star)
+            else:
+                K_star_star = X_hat_star @ self.S_0 @ X_hat_star.T
         m_f_hat_star = X_hat_star @ self.m_0 + K_star_ @ self.K_inv @ (self.y_hat - self.m_offset)
-        s_f_hat_star = K_star_star - K_star_ @ self.K_inv @ K_star_.T
+        if diag_only:
+            s_f_hat_star = K_star_star - np.einsum('ij,ij->i', K_star_ @ self.K_inv, K_star_)
+        else:
+            s_f_hat_star = K_star_star - K_star_ @ self.K_inv @ K_star_.T
         return m_f_hat_star, s_f_hat_star
 
     def log_marginal_likelihood(self, X_hat=None, y_hat=None):

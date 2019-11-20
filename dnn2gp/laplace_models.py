@@ -209,7 +209,7 @@ class LogisticRegression(LaplaceModel):
 class NeuralNetworkRegression(LaplaceModel):
 
     def __init__(self, X, y, delta, sigma_noise=1, compute_posterior=True, n_epochs=10000, activation='tanh',
-                 step_size=1e-3, hidden_size=10, n_layers=3, n_samples_pred=100, diagonal=True, seed=77):
+                 step_size=1e-3, hidden_size=10, n_layers=3, n_samples_pred=100, diagonal=True, seed=77, lr_factor=0.99):
         torch.manual_seed(seed)
         self.n_epochs = n_epochs
         self.alpha = step_size
@@ -221,6 +221,7 @@ class NeuralNetworkRegression(LaplaceModel):
         self.sigma_noise = sigma_noise
         self.sn = self.sigma_noise ** 2
         self.bn = 1 / self.sn
+        self.lr_factor = lr_factor
         super().__init__(X, y, delta, compute_posterior)
 
     def _init_model(self, in_size, hidden_size, n_layers, activation='tanh'):
@@ -236,16 +237,19 @@ class NeuralNetworkRegression(LaplaceModel):
 
     def compute_theta_star(self):
         opt = Adam(self.model.parameters(), lr=self.alpha, weight_decay=0)
-        scheduler = ReduceLROnPlateau(opt, 'min', factor=0.99, min_lr=1e-10)
+        scheduler = ReduceLROnPlateau(opt, 'min', factor=self.lr_factor, min_lr=1e-10)
         for i in range(self.n_epochs):
             opt.zero_grad()
             output = self.model.forward(self.Xt)
             likelihood = Normal(output.flatten(), self.sigma_noise)
             prior = Normal(0, 1 / np.sqrt(self.delta))
-            loss = - torch.sum(likelihood.log_prob(self.yt)) - torch.sum(prior.log_prob(self.model.weights))
+            nll = - torch.sum(likelihood.log_prob(self.yt))
+            loss = nll - torch.sum(prior.log_prob(self.model.weights))
             loss.backward()
             opt.step()
             scheduler.step(loss.item())
+            if (i+1) % 500 == 0:
+                print(i + 1, nll.item())
             self.losses.append(loss.item())
         self.theta_star = self.model.weights.detach().numpy()
 
@@ -281,7 +285,7 @@ class NeuralNetworkRegression(LaplaceModel):
         elif hessian_approx == 'H':
             raise NotImplementedError
 
-    def posterior_predictive_f(self, X_star, hessian_approx, compute_cov=True):
+    def posterior_predictive_f(self, X_star, hessian_approx, compute_cov=True, diag_only=False, n_samples=None):
         m, S, P = self.q_laplace(hessian_approx)
         if self.diagonal:
             Scale = np.diag(np.sqrt(1 / np.diag(P)))
@@ -291,7 +295,7 @@ class NeuralNetworkRegression(LaplaceModel):
         theta_star = self.model.weights
         self.model.eval()
         means = list()
-        for randn_sample in np.random.randn(self.n_samples_pred, len(theta_star)):
+        for randn_sample in np.random.randn(n_samples or self.n_samples_pred, len(theta_star)):
             weight_sample = m + Scale @ randn_sample
             self.model.adjust_weights(weight_sample)
             fs = self.model(torch.from_numpy(X_star)).flatten().detach().numpy()
@@ -300,7 +304,10 @@ class NeuralNetworkRegression(LaplaceModel):
         self.model.train()
         pred_samples = np.array(means)
         if compute_cov:
-            return np.mean(pred_samples, axis=0), np.cov(pred_samples.T)
+            if diag_only:
+                return np.mean(pred_samples, axis=0), np.var(pred_samples, axis=0)
+            else:
+                return np.mean(pred_samples, axis=0), np.cov(pred_samples.T)
         else:
             return np.mean(pred_samples, axis=0)
 
@@ -389,7 +396,7 @@ class NeuralNetworkClassification(LaplaceModel):
         elif hessian_approx == 'H':
             raise NotImplementedError
 
-    def posterior_predictive_f(self, X_star, hessian_approx, link=identity, compute_cov=True):
+    def posterior_predictive_f(self, X_star, hessian_approx, link=identity, compute_cov=True, n_samples=None):
         m, _, P = self.q_laplace(hessian_approx, skip_inverse=True)
         if self.diagonal:
             Scale = np.diag(np.sqrt(1 / np.diag(P)))
@@ -399,7 +406,7 @@ class NeuralNetworkClassification(LaplaceModel):
         theta_star = self.model.weights
         self.model.eval()
         means = list()
-        for randn_sample in np.random.randn(self.n_samples_pred, len(theta_star)):
+        for randn_sample in np.random.randn(n_samples or self.n_samples_pred, len(theta_star)):
             weight_sample = m + Scale @ randn_sample
             self.model.adjust_weights(weight_sample)
             fs = link(self.model(torch.from_numpy(X_star)).flatten().detach().numpy())
