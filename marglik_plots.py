@@ -212,6 +212,65 @@ def produce_additional_toy_plots(name):
     plt.tight_layout()
     plt.savefig('figures/marglik_width_toy_laplace.pdf')
 
+def produce_paper_uci_plots(name):
+    pnames = ['width', 'delta', 'sigma']
+    ylims = [[0.14, 0.69], [0.0, 1.09], [0.0, 1.09]]
+    xlabels = ['width', r'hyperparameter $\delta$', r'hyperparameter $\sigma$']
+    legend_locs = [(0.0, 0.64), (0.2, 0.64), (0.1, 0.64)]
+    for pname, ylim, xlabel, legend_loc in zip(pnames, ylims, xlabels, legend_locs):
+        with open('results/reg_ms_{}_{}.pkl'.format(pname, name), 'rb') as f:
+            res = pickle.load(f)
+
+        mlhs = np.array([res['results'][i]['mlh'] for i in range(len(res['params']))])
+        testmap = np.array([res['results'][i]['test_loss_map'] for i in range(len(res['params']))])
+        trainmap = np.array([res['results'][i]['train_loss_map'] for i in range(len(res['params']))])
+
+        n = len(res['datasets'])
+        div = np.sqrt(n)
+
+        params = np.array(res['params'])
+
+        fig, ax1 = plt.subplots(figsize=(4.9, 4.0))
+
+        ax1.set_xscale('log')
+        ax1.plot(params, trainmap.mean(axis=1), label='train loss', linestyle='--', c=train, zorder=1)
+        ax1.plot(params, testmap.mean(axis=1), label='test loss', linestyle='-', c=test, zorder=1)
+        testlosses = testmap.mean(axis=1)
+
+        m, s = trainmap.mean(axis=1), trainmap.std(axis=1)/div
+        ax1.fill_between(params, m-s, m+s, color='gray', alpha=0.15)
+        m, s = testmap.mean(axis=1), testmap.std(axis=1)/div
+        ax1.fill_between(params, m-s, m+s, color='gray', alpha=0.15)
+        ax1.legend(loc=(legend_loc[0], legend_loc[1] + 0.11))
+        ax1.set_ylabel('MSE')
+        ax1.set_ylim(ylim)
+        ax1.set_xlabel(xlabel)
+
+        ax2 = ax1.twinx()
+
+        col = ax1._get_lines.get_next_color()
+        col = ax1._get_lines.get_next_color()
+        ax2.set_xscale('log')
+        ax2.plot(params, -mlhs.mean(axis=1), color=clap, label='Train MargLik', linewidth=3, zorder=1)
+        m, s = -mlhs.mean(axis=1), -mlhs.std(axis=1)/div
+        ax2.fill_between(params, m-s, m+s, color=clap, alpha=0.15)
+        lhss = -mlhs.mean(axis=1)
+        ax2.grid(False)
+
+        ax1.scatter([params[np.argmin(testlosses)]], [np.min(testlosses)], c='black', marker='*', linewidth=4, zorder=2)
+        ax2.scatter([params[np.argmin(lhss)]], [np.min(lhss)], c='black', marker='*', linewidth=4, zorder=2)
+        gen_loss = np.abs(testmap.mean(axis=1) - trainmap.mean(axis=1))
+        ix = np.argmin(gen_loss)
+        # ax2.scatter([widths[ix]], [testmap.mean(axis=1)[ix]], c='black', marker='*', linewidth=4, zorder=2)
+
+        ax2.legend(loc=legend_loc)
+        ax2.set_ylabel('-log marginal likelihood')
+        ax2.yaxis.tick_right()
+        ax2.yaxis.set_label_position("right")
+        # ax2.set_ylim(ylim)
+        plt.tight_layout()
+
+        plt.savefig('figures/marglik_{}_{}_laplace.pdf'.format(pname, name))
 
 if __name__ == '__main__':
     import argparse
@@ -220,7 +279,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     name = args.name
     # delta on the toy data set with Laplace and VI (used in paper)
-    produce_paper_toy_plots(name)
+    # produce_paper_toy_plots(name)
     # width and depth on the toy data set with Laplace and VI (not in paper)
-    produce_additional_toy_plots(name)
-    # TODO: add UCI result plotting
+    # produce_additional_toy_plots(name)
+    # width, delta and sigma on wine dataset with Laplace
+    produce_paper_uci_plots('wine')
