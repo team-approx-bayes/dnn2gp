@@ -177,9 +177,9 @@ def plot_observations(jtheta, Y, classes, Y_colors, fname, use_gl=False, width=3
 if __name__ == '__main__':
     K = np.load('results/CIFAR_Laplace_kernel.npy')
     Jtheta = np.load('results/CIFAR_Laplace_gp_predictive_mean.npy')
-    Var_y = np.load('results/CIFAR_Laplace_gp_output_var.npy')
-    Var_f = np.load('results/CIFAR_Laplace_gp_functional_var.npy')
-    ps = np.load('results/CIFAR_Laplace_nn_predictive.npy')
+    Var_y = np.load('results/CIFAR_Laplace_predictive_noise.npy')
+    Var_f = np.load('results/CIFAR_Laplace_predictive_var_f.npy')
+    ps = np.load('results/CIFAR_Laplace_predictive_mean.npy')
     Ys = np.concatenate([np.repeat([i], 30) for i in range(10)])
     plot_kernel(K, Ys, tab10, 'cifar_laplace_kernel')
     plot_observations(ps, Ys, np.arange(10), tab10, 'cifar_laplace_pred_mean_ste', width=550)
